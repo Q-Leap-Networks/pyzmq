@@ -60,7 +60,7 @@ class TestSecurity(BaseZMQTestCase):
                     b"200",
                     b"OK",
                     b"anonymous",
-                    b"\5Hello\0\0\0\5World",
+                    b"",
                 ])
             else:
                 reply.extend([
@@ -80,18 +80,10 @@ class TestSecurity(BaseZMQTestCase):
     def stop_zap(self):
         self.zap_thread.join()
 
-    def bounce(self, server, client, test_metadata=True):
+    def bounce(self, server, client):
         msg = [os.urandom(64), os.urandom(64)]
         client.send_multipart(msg)
-        frames = self.recv_multipart(server, copy=False)
-        recvd = list(map(lambda x: x.bytes, frames))
-
-        if test_metadata:
-            for frame in frames:
-                self.assertEqual(frame.gets(b'User-Id'), b'anonymous')
-                self.assertEqual(frame.gets(b'Hello'), b'World')
-                self.assertEqual(frame.gets(b'Socket-Type'), b'DEALER')
-
+        recvd = self.recv_multipart(server)
         self.assertEqual(recvd, msg)
         server.send_multipart(recvd)
         msg2 = self.recv_multipart(client)
@@ -108,7 +100,7 @@ class TestSecurity(BaseZMQTestCase):
         iface = 'tcp://127.0.0.1'
         port = server.bind_to_random_port(iface)
         client.connect("%s:%i" % (iface, port))
-        self.bounce(server, client, False)
+        self.bounce(server, client)
 
     def test_plain(self):
         """test PLAIN authentication"""

@@ -1,0 +1,92 @@
+Description: merge zmq_msg_gets bindings
+---
+
+--- pyzmq-14.3.0+git.20140520.orig/zmq/tests/test_security.py
++++ pyzmq-14.3.0+git.20140520/zmq/tests/test_security.py
+@@ -60,7 +60,7 @@ class TestSecurity(BaseZMQTestCase):
+                     b"200",
+                     b"OK",
+                     b"anonymous",
+-                    b"",
++                    b"\5Hello\0\0\0\5World",
+                 ])
+             else:
+                 reply.extend([
+@@ -80,10 +80,18 @@ class TestSecurity(BaseZMQTestCase):
+     def stop_zap(self):
+         self.zap_thread.join()
+ 
+-    def bounce(self, server, client):
++    def bounce(self, server, client, test_metadata=True):
+         msg = [os.urandom(64), os.urandom(64)]
+         client.send_multipart(msg)
+-        recvd = self.recv_multipart(server)
++        frames = self.recv_multipart(server, copy=False)
++        recvd = list(map(lambda x: x.bytes, frames))
++
++        if test_metadata:
++            for frame in frames:
++                self.assertEqual(frame.gets(b'User-Id'), b'anonymous')
++                self.assertEqual(frame.gets(b'Hello'), b'World')
++                self.assertEqual(frame.gets(b'Socket-Type'), b'DEALER')
++
+         self.assertEqual(recvd, msg)
+         server.send_multipart(recvd)
+         msg2 = self.recv_multipart(client)
+@@ -100,7 +108,7 @@ class TestSecurity(BaseZMQTestCase):
+         iface = 'tcp://127.0.0.1'
+         port = server.bind_to_random_port(iface)
+         client.connect("%s:%i" % (iface, port))
+-        self.bounce(server, client)
++        self.bounce(server, client, False)
+ 
+     def test_plain(self):
+         """test PLAIN authentication"""
+--- pyzmq-14.3.0+git.20140520.orig/zmq/backend/cython/libzmq.pxd
++++ pyzmq-14.3.0+git.20140520/zmq/backend/cython/libzmq.pxd
+@@ -29,6 +29,7 @@
+ 
+ cdef extern from *:
+     ctypedef void* const_void_ptr "const void *"
++    ctypedef char* const_char_ptr "const char *"
+ 
+ cdef extern from "zmq_compat.h":
+     ctypedef signed long long int64_t "pyzmq_int64_t"
+@@ -70,6 +71,7 @@ cdef extern from "zmq.h" nogil:
+     size_t zmq_msg_size (zmq_msg_t *msg)
+     int zmq_msg_more (zmq_msg_t *msg)
+     int zmq_msg_get (zmq_msg_t *msg, int option)
++    const_char_ptr zmq_msg_gets (zmq_msg_t *msg, const_char_ptr property)
+     int zmq_msg_set (zmq_msg_t *msg, int option, int optval)
+ 
+     void *zmq_socket (void *context, int type)
+--- pyzmq-14.3.0+git.20140520.orig/zmq/backend/cython/message.pyx
++++ pyzmq-14.3.0+git.20140520/zmq/backend/cython/message.pyx
+@@ -350,6 +350,27 @@ cdef class Frame:
+         _check_rc(rc)
+         return rc
+ 
++    def gets(self, object property):
++        """Frame.gets(property)
++
++        Get a Frame property.
++
++        See the 0MQ API documentation for zmq_msg_gets
++        for details on specific options.
++
++        .. versionadded:: libzmq-4.1
++        .. versionadded:: 14.3
++        """
++        cdef char *property_c = NULL
++        cdef Py_ssize_t property_len_c = 0
++
++        if isinstance(property, unicode):
++            raise TypeError("Unicode objects not allowed. Only: str/bytes, buffer interfaces.")
++
++        asbuffer_r(property, <void **>&property_c, &property_len_c)
++        cdef const char *result = zmq_msg_gets(&self.zmq_msg, property_c)
++        return result if result != NULL else None
++
+ # legacy Message name
+ Message = Frame
+ 
