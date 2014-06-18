@@ -1,10 +1,16 @@
-pyzmq (14.3.0+git.20140520-1+ql1) precise; urgency=low
+pyzmq (14.3.0+git.20140520-1+ql2) stable; urgency=low
+
+  * Merge zmq_msg_gets_bindings from amrali.
+
+ -- Goswin von Brederlow <brederlo@q-leap.de>  Tue, 20 May 2014 11:32:40 +0200
+
+pyzmq (14.3.0+git.20140520-1+ql1) stable; urgency=low
 
   * New upstream version: git snapshot from 2014.05.20.
 
  -- Goswin von Brederlow <brederlo@q-leap.de>  Tue, 20 May 2014 10:42:06 +0200
 
-pyzmq (14.0.1+git.20140411-1+ql1) precise; urgency=low
+pyzmq (14.0.1+git.20140411-1+ql1) stable; urgency=low
 
   * New upstream version: git snapshot from 2014.04.11.
     + Add support for zmq 4.1.0.
