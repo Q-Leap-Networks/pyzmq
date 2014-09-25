@@ -1,3 +1,9 @@
+pyzmq (14.3.0+git.20140520-1+ql3) stable; urgency=low
+
+  * Add IDENTITY_FD enum.
+
+ -- Goswin von Brederlow <brederlo@q-leap.de>  Tue, 01 Jul 2014 15:26:36 +0200
+
 pyzmq (14.3.0+git.20140520-1+ql2) stable; urgency=low
 
   * Merge zmq_msg_gets_bindings from amrali.

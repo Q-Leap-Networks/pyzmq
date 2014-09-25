@@ -1,3 +1,4 @@
 add-submodules.patch
 disable-tests.patch
 zmq_msg_gets.patch
+add-identity-fd.patch

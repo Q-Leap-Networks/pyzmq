@@ -1,0 +1,76 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ pyzmq (14.3.0+git.20140520-1+ql4) precise; urgency=low
+ .
+   * Rebuild against libzmq4-dev
+Author: Goswin von Brederlow <brederlo@q-leap.de>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- pyzmq-14.3.0+git.20140520.orig/zmq/backend/cython/constants.pxi
++++ pyzmq-14.3.0+git.20140520/zmq/backend/cython/constants.pxi
+@@ -78,6 +78,7 @@ IO_THREADS = ZMQ_IO_THREADS
+ MAX_SOCKETS = ZMQ_MAX_SOCKETS
+ MORE = ZMQ_MORE
+ IDENTITY = ZMQ_IDENTITY
++IDENTITY_FD = ZMQ_IDENTITY_FD
+ SUBSCRIBE = ZMQ_SUBSCRIBE
+ UNSUBSCRIBE = ZMQ_UNSUBSCRIBE
+ LAST_ENDPOINT = ZMQ_LAST_ENDPOINT
+@@ -218,6 +219,7 @@ __all__ = [
+   "MAX_SOCKETS",
+   "MORE",
+   "IDENTITY",
++  "IDENTITY_FD",
+   "SUBSCRIBE",
+   "UNSUBSCRIBE",
+   "LAST_ENDPOINT",
+--- pyzmq-14.3.0+git.20140520.orig/zmq/backend/cython/constant_enums.pxi
++++ pyzmq-14.3.0+git.20140520/zmq/backend/cython/constant_enums.pxi
+@@ -76,6 +76,7 @@ cdef extern from "zmq.h" nogil:
+     enum: ZMQ_MAX_SOCKETS
+     enum: ZMQ_MORE
+     enum: ZMQ_IDENTITY
++    enum: ZMQ_IDENTITY_FD
+     enum: ZMQ_SUBSCRIBE
+     enum: ZMQ_UNSUBSCRIBE
+     enum: ZMQ_LAST_ENDPOINT
+--- pyzmq-14.3.0+git.20140520.orig/zmq/utils/zmq_constants.h
++++ pyzmq-14.3.0+git.20140520/zmq/utils/zmq_constants.h
+@@ -305,6 +305,10 @@
+     #define ZMQ_IDENTITY (-1)
+ #endif
+ 
++#ifndef ZMQ_IDENTITY_FD
++    #define ZMQ_IDENTITY_FD (-1)
++#endif
++
+ #ifndef ZMQ_SUBSCRIBE
+     #define ZMQ_SUBSCRIBE (-1)
+ #endif
+--- pyzmq-14.3.0+git.20140520.orig/zmq/utils/constant_names.py
++++ pyzmq-14.3.0+git.20140520/zmq/utils/constant_names.py
+@@ -266,6 +266,7 @@ int_sockopt_names = [
+     'LINGER',
+     'RECONNECT_IVL',
+     'BACKLOG',
++    'IDENTITY_FD',
+     
+     'ROUTER_MANDATORY',
+     'FAIL_UNROUTABLE',
