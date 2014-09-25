@@ -1,3 +1,9 @@
+pyzmq (14.3.0+git.20140520-1+ql4) precise; urgency=low
+
+  * Rebuild against libzmq4-dev
+
+ -- Goswin von Brederlow <brederlo@q-leap.de>  Thu, 25 Sep 2014 11:43:58 +0200
+
 pyzmq (14.3.0+git.20140520-1+ql3) stable; urgency=low
 
   * Add IDENTITY_FD enum.
