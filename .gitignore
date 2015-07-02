@@ -1,3 +1,4 @@
+*~
 *.pyc
 zmq/backend/cython/*.c
 zmq/devices/*.c
