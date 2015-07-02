@@ -1,6 +1,7 @@
 pyzmq (14.7.0-0ql1) stable; urgency=medium
 
   * New upstream version
+  * Build against libzmq5 (>= 4.1.2)
 
  -- Goswin von Brederlow <brederlo@q-leap.de>  Thu, 02 Jul 2015 09:32:59 +0000
 
