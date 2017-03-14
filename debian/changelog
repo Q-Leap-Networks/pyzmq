@@ -1,3 +1,9 @@
+pyzmq (16.0.2-ql.1) stable; urgency=medium
+
+  * New upstream version 16.0.2
+
+ -- Goswin von Brederlow <brederlo@q-leap.de>  Tue, 14 Mar 2017 13:29:28 +0000
+
 pyzmq (14.7.0-ql.1) stable; urgency=medium
 
   * New upstream version
