@@ -1,6 +1,12 @@
 #ifndef _PYZMQ_CONSTANT_DEFS
 #define _PYZMQ_CONSTANT_DEFS
 
+#ifdef ZMQ_BUILD_DRAFT_API
+    #define PYZMQ_DRAFT_API 1
+#else
+    #define PYZMQ_DRAFT_API 0
+#endif
+
 #define _PYZMQ_UNDEFINED (-9999)
 #ifndef ZMQ_VERSION
     #define ZMQ_VERSION (_PYZMQ_UNDEFINED)
@@ -36,6 +42,10 @@
 
 #ifndef ZMQ_POLLERR
     #define ZMQ_POLLERR (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_POLLPRI
+    #define ZMQ_POLLPRI (_PYZMQ_UNDEFINED)
 #endif
 
 #ifndef ZMQ_SNDMORE
@@ -136,6 +146,34 @@
 
 #ifndef ZMQ_STREAM
     #define ZMQ_STREAM (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_SERVER
+    #define ZMQ_SERVER (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_CLIENT
+    #define ZMQ_CLIENT (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_RADIO
+    #define ZMQ_RADIO (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_DISH
+    #define ZMQ_DISH (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_GATHER
+    #define ZMQ_GATHER (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_SCATTER
+    #define ZMQ_SCATTER (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_DGRAM
+    #define ZMQ_DGRAM (_PYZMQ_UNDEFINED)
 #endif
 
 #ifndef ZMQ_EVENT_CONNECTED
@@ -334,6 +372,10 @@
     #define ZMQ_THREAD_SCHED_POLICY (_PYZMQ_UNDEFINED)
 #endif
 
+#ifndef ZMQ_BLOCKY
+    #define ZMQ_BLOCKY (_PYZMQ_UNDEFINED)
+#endif
+
 #ifndef ZMQ_IDENTITY
     #define ZMQ_IDENTITY (_PYZMQ_UNDEFINED)
 #endif
@@ -392,6 +434,10 @@
 
 #ifndef ZMQ_SOCKS_PROXY
     #define ZMQ_SOCKS_PROXY (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_XPUB_WELCOME_MSG
+    #define ZMQ_XPUB_WELCOME_MSG (_PYZMQ_UNDEFINED)
 #endif
 
 #ifndef ZMQ_FD
@@ -558,6 +604,58 @@
     #define ZMQ_XPUB_NODROP (_PYZMQ_UNDEFINED)
 #endif
 
+#ifndef ZMQ_XPUB_MANUAL
+    #define ZMQ_XPUB_MANUAL (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_STREAM_NOTIFY
+    #define ZMQ_STREAM_NOTIFY (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_INVERT_MATCHING
+    #define ZMQ_INVERT_MATCHING (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_XPUB_VERBOSER
+    #define ZMQ_XPUB_VERBOSER (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_HEARTBEAT_IVL
+    #define ZMQ_HEARTBEAT_IVL (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_HEARTBEAT_TTL
+    #define ZMQ_HEARTBEAT_TTL (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_HEARTBEAT_TIMEOUT
+    #define ZMQ_HEARTBEAT_TIMEOUT (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_CONNECT_TIMEOUT
+    #define ZMQ_CONNECT_TIMEOUT (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_TCP_MAXRT
+    #define ZMQ_TCP_MAXRT (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_THREAD_SAFE
+    #define ZMQ_THREAD_SAFE (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_MULTICAST_MAXTPDU
+    #define ZMQ_MULTICAST_MAXTPDU (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_VMCI_CONNECT_TIMEOUT
+    #define ZMQ_VMCI_CONNECT_TIMEOUT (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_USE_FD
+    #define ZMQ_USE_FD (_PYZMQ_UNDEFINED)
+#endif
+
 #ifndef ZMQ_AFFINITY
     #define ZMQ_AFFINITY (_PYZMQ_UNDEFINED)
 #endif
@@ -580,6 +678,18 @@
 
 #ifndef ZMQ_RECOVERY_IVL_MSEC
     #define ZMQ_RECOVERY_IVL_MSEC (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_VMCI_BUFFER_SIZE
+    #define ZMQ_VMCI_BUFFER_SIZE (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_VMCI_BUFFER_MIN_SIZE
+    #define ZMQ_VMCI_BUFFER_MIN_SIZE (_PYZMQ_UNDEFINED)
+#endif
+
+#ifndef ZMQ_VMCI_BUFFER_MAX_SIZE
+    #define ZMQ_VMCI_BUFFER_MAX_SIZE (_PYZMQ_UNDEFINED)
 #endif
 
 #ifndef ZMQ_RATE
@@ -613,6 +723,7 @@
 #ifndef ZMQ_SHARED
     #define ZMQ_SHARED (_PYZMQ_UNDEFINED)
 #endif
+
 
 
 #endif // ifndef _PYZMQ_CONSTANT_DEFS

@@ -6,8 +6,94 @@
 Changes in PyZMQ
 ================
 
-This is a coarse summary of changes in pyzmq versions.  For a real changelog, consult the
-`git log <https://github.com/zeromq/pyzmq/commits>`_
+This is a coarse summary of changes in pyzmq versions.
+For a full changelog, consult the `git log <https://github.com/zeromq/pyzmq/commits>`_.
+
+
+16.0.2
+======
+
+- Workaround bug in libzmq-4.2.0 causing EINVAL on poll.
+
+16.0.1
+======
+
+- Fix erroneous EAGAIN that could happen on async sockets
+- Bundle libzmq 4.1.6
+
+16.0
+====
+
+- Support for Python 2.6 and Python 3.2 is dropped. For old Pythons, use :command:`pip install "pyzmq<16"` to get the last version of pyzmq that supports these versions.
+- Include zmq.h
+- Deprecate ``zmq.Stopwatch``. Native Python timing tools can be used instead.
+- Better support for using pyzmq as a Cython library
+  - bundle zmq.h when pyzmq bundles libzmq as an extension
+  - add :func:`zmq.get_library_dirs` to find bundled libzmq
+- Updates to setup.py for Cython 0.25 compatibility
+- Various asyncio/future fixes:
+  - support raw sockets in pollers
+  - allow cancelling async sends
+- Fix :meth:`IOLoop.current` in :mod:`zmq.green`
+
+
+15.4
+====
+
+- Load bundled libzmq extension with import rather than CDLL,
+  which should fix some manifest issues in certain cases on Windows.
+- Avoid installing asyncio sources on Python 2, which confuses some tools that run `python -m compileall`, which reports errors on the Python 3-only files.
+- Bundle msvcp.dll in Windows wheels on CPython 3.5,
+  which should fix wheel compatibility systems without Visual C++ 2015 redistributable.
+- :meth:`zmq.Context.instance` is now threadsafe.
+- FIX: sync some behavior in zmq_poll and setting LINGER on close/destroy with the CFFI backend.
+- PERF: resolve send/recv immediately if events are available in async Sockets
+- Async Sockets (asyncio, tornado) now support ``send_json``, ``send_pyobj``, etc.
+- add preliminary support for ``zmq.DRAFT_API`` reflecting ZMQ_BUILD_DRAFT_API,
+  which indicates whether new APIs in prereleases are available.
+
+
+15.3
+====
+
+- Bump bundled libzmq to 4.1.5, using tweetnacl for bundled curve support instead of libsodium
+- FIX: include .pxi includes in installation for consumers of Cython API
+- FIX: various fixes in new async sockets
+- Introduce :mod:`zmq.decorators` API for decorating functions to create sockets or contexts
+- Add :meth:`zmq.Socket.subscribe` and :meth:`zmq.Socket.unsubscribe` methods to sockets, so that assignment is no longer needed for subscribing. Verbs should be methods!
+  Assignment is still supported for backward-compatibility.
+- Accept text (unicode) input to z85 encoding, not just bytes
+- :meth:`zmq.Context.socket` forwards keyword arguments to the :class:`Socket` constructor
+
+15.2
+====
+
+- FIX: handle multiple events in a single register call in :mod:`zmq.asyncio`
+- FIX: unicode/bytes bug in password prompt in :mod:`zmq.ssh` on Python 3
+- FIX: workaround gevent monkeypatches in garbage collection thread
+- update bundled minitornado from tornado-4.3.
+- improved inspection by setting ``binding=True`` in cython compile options
+- add asyncio Authenticator implementation in :mod:`zmq.auth.asyncio`
+- workaround overflow bug in libzmq preventing receiving messages larger than ``MAX_INT``
+
+15.1
+====
+
+- FIX: Remove inadvertant tornado dependency when using :mod:`zmq.asyncio`
+- FIX: 15.0 Python 3.5 wheels didn't work on Windows
+- Add GSSAPI support to Authenticators
+- Support new constants defined in upcoming libzmq-4.2.dev
+
+15.0
+====
+
+PyZMQ 15 adds Future-returning sockets and pollers for both :mod:`asyncio` and :mod:`tornado`.
+
+- add :mod:`asyncio` support via :mod:`zmq.asyncio`
+- add :mod:`tornado` future support via :mod:`zmq.eventloop.future`
+- trigger bundled libzmq if system libzmq is found to be < 3.
+  System libzmq 2 can be forced by explicitly requesting ``--zmq=/prefix/``.
+
 
 14.7.0
 ======

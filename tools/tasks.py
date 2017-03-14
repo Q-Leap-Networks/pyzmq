@@ -22,9 +22,9 @@ import shutil
 import sys
 
 from contextlib import contextmanager
-from subprocess import check_call
 
 from invoke import task, run as invoke_run
+import requests
 
 pjoin = os.path.join
 
@@ -36,9 +36,10 @@ py_exes = {
     '3.4' : _framework_py('3.4'),
     '3.5' : _framework_py('3.5'),
     'pypy': "/usr/local/bin/pypy",
-    'pypy3': "/usr/local/bin/pypy3",
+    # FIXME: pypy3 can have releases when they support Python >= 3.3
+    # 'pypy3': "/usr/local/bin/pypy3",
 }
-egg_pys = {'2.7'}
+egg_pys = {} # no more eggs!
 
 tmp = "/tmp"
 env_root = os.path.join(tmp, 'envs')
@@ -46,7 +47,7 @@ repo_root = pjoin(tmp, 'pyzmq-release')
 sdist_root = pjoin(tmp, 'pyzmq-sdist')
 
 def _py(py):
-    return py_exes.get(py, py)
+    return py_exes[py]
 
 def run(cmd, **kwargs):
     """wrapper around invoke.run that accepts a Popen list"""
@@ -129,7 +130,7 @@ def make_env(py_exe, *packages):
     py = pjoin(env, 'bin', 'python')
     # new env
     if not os.path.exists(py):
-        run('python -m virtualenv {} -p {}'.format(
+        run('virtualenv {} -p {}'.format(
             pipes.quote(env),
             pipes.quote(py_exe),
         ))
@@ -144,12 +145,11 @@ def build_sdist(py, upload=False):
     
     Returns the path to the tarball
     """
-    install(py, 'cython')
     with cd(repo_root):
-        cmd = [py, 'setup.py', 'sdist', '--formats=zip,gztar']
-        if upload:
-            cmd.append('upload')
+        cmd = [py, 'setup.py', 'sdist']
         run(cmd)
+        if upload:
+            run(['twine', 'upload', 'dist/*'])
     
     return glob.glob(pjoin(repo_root, 'dist', '*.tar.gz'))[0]
 
@@ -157,7 +157,7 @@ def build_sdist(py, upload=False):
 def sdist(vs, upload=False):
     clone_repo()
     tag(vs, push=upload)
-    py = make_env('2.7', 'cython')
+    py = make_env('3.5', 'cython', 'twine')
     tarball = build_sdist(py, upload=upload)
     return untar(tarball)
 
@@ -182,18 +182,39 @@ def untar(tarball):
     
     return glob.glob(pjoin(sdist_root, '*'))[0]
 
-def bdist(py, upload=False, wheel=True, egg=False):
+def bdist(py, wheel=True, egg=False):
     py = make_env(py, 'wheel')
     cmd = [py, 'setup.py']
     if wheel:
         cmd.append('bdist_wheel')
     if egg:
         cmd.append('bdist_egg')
-    if upload:
-        cmd.append('upload')
     cmd.append('--zmq=bundled')
     
     run(cmd)
+
+@task
+def manylinux(vs, upload=False):
+    """Build manylinux wheels with Matthew Brett's manylinux-builds"""
+    manylinux = '/tmp/manylinux-builds'
+    if not os.path.exists(manylinux):
+        with cd('/tmp'):
+            run("git clone --recursive https://github.com/minrk/manylinux-builds -b pyzmq")
+    else:
+        with cd(manylinux):
+            run("git pull")
+            run("git submodule update")
+    
+    base_cmd = "docker run --rm -e PYZMQ_VERSIONS='{vs}' -e PYTHON_VERSIONS='{pys}' -v $PWD:/io".format(
+        vs=vs,
+        pys='2.7 3.4 3.5'
+    )
+    with cd(manylinux):
+        run(base_cmd +  " quay.io/pypa/manylinux1_x86_64 /io/build_pyzmqs.sh")
+        run(base_cmd +  " quay.io/pypa/manylinux1_i686 linux32 /io/build_pyzmqs.sh")
+    if upload:
+        py = make_env('3.5', 'twine')
+        run(['twine', 'upload', os.path.join(manylinux, 'wheelhouse', '*')])
 
 @task
 def release(vs, upload=False):
@@ -212,5 +233,60 @@ def release(vs, upload=False):
     
     with cd(path):
         for v in py_exes:
-            bdist(v, upload=upload, wheel=True, egg=(v in egg_pys))
+            bdist(v, wheel=True, egg=(v in egg_pys))
+        if upload:
+            py = make_env('3.5', 'twine')
+            run(['twine', 'upload', 'dist/*'])
+    
+    manylinux(vs, upload=upload)
+    if upload:
+        print("When AppVeyor finished building, upload artifacts with:")
+        print("  invoke appveyor_artifacts {} --upload".format(vs))
+
+
+_appveyor_api = 'https://ci.appveyor.com/api'
+_appveyor_project = 'minrk/pyzmq'
+def _appveyor_api_request(path):
+    """Make an appveyor API request"""
+    r = requests.get('{}/{}'.format(_appveyor_api, path),
+        headers={
+            # 'Authorization': 'Bearer %s' % token,
+            'Content-Type': 'application/json',
+        }
+    )
+    r.raise_for_status()
+    return r.json()
+
+
+@task
+def appveyor_artifacts(vs, dest='win-dist', upload=False):
+    """Download appveyor artifacts
+
+    If --upload is given, upload to PyPI
+    """
+    if not os.path.exists(dest):
+        os.makedirs(dest)
+
+    build = _appveyor_api_request('projects/{}/branch/v{}'.format(_appveyor_project, vs))
+    jobs = build['build']['jobs']
+    artifact_urls = []
+    for job in jobs:
+        artifacts = _appveyor_api_request('buildjobs/{}/artifacts'.format(job['jobId']))
+        artifact_urls.extend('{}/buildjobs/{}/artifacts/{}'.format(
+            _appveyor_api, job['jobId'], artifact['fileName']
+        ) for artifact in artifacts)
+    for url in artifact_urls:
+        print("Downloading {} to {}".format(url, dest))
+        fname = url.rsplit('/', 1)[-1]
+        r = requests.get(url, stream=True)
+        r.raise_for_status()
+        with open(os.path.join(dest, fname), 'wb') as f:
+            for chunk in r.iter_content(1024):
+                f.write(chunk)
+    if upload:
+        py = make_env('3.5', 'twine')
+        run(['twine', 'upload', '{}/*'.format(dest)])
+    else:
+        print("You can now upload these wheels with: ")
+        print("  twine upload {}/*".format(dest))
 

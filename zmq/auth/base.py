@@ -20,10 +20,12 @@ class Authenticator(object):
     """Implementation of ZAP authentication for zmq connections.
 
     Note:
+    
     - libzmq provides four levels of security: default NULL (which the Authenticator does
-      not see), and authenticated NULL, PLAIN, and CURVE, which the Authenticator can see.
-    - until you add policies, all incoming NULL connections are allowed
-    (classic ZeroMQ behavior), and all PLAIN and CURVE connections are denied.
+      not see), and authenticated NULL, PLAIN, CURVE, and GSSAPI, which the Authenticator can see.
+    - until you add policies, all incoming NULL connections are allowed.
+      (classic ZeroMQ behavior), and all PLAIN and CURVE connections are denied.
+    - GSSAPI requires no configuration.
     """
 
     def __init__(self, context=None, encoding='utf-8', log=None):
@@ -47,6 +49,7 @@ class Authenticator(object):
         self.zap_socket = self.context.socket(zmq.REP)
         self.zap_socket.linger = 1
         self.zap_socket.bind("inproc://zeromq.zap.01")
+        self.log.debug("Starting")
 
     def stop(self):
         """Close the ZAP socket"""
@@ -60,12 +63,13 @@ class Authenticator(object):
         Connections from addresses not in the whitelist will be rejected.
         
         - For NULL, all clients from this address will be accepted.
-        - For PLAIN and CURVE, they will be allowed to continue with authentication.
+        - For real auth setups, they will be allowed to continue with authentication.
         
         whitelist is mutually exclusive with blacklist.
         """
         if self.blacklist:
             raise ValueError("Only use a whitelist or a blacklist, not both")
+        self.log.debug("Allowing %s", ','.join(addresses))
         self.whitelist.update(addresses)
 
     def deny(self, *addresses):
@@ -77,6 +81,7 @@ class Authenticator(object):
         """
         if self.whitelist:
             raise ValueError("Only use a whitelist or a blacklist, not both")
+        self.log.debug("Denying %s", ','.join(addresses))
         self.blacklist.update(addresses)
 
     def configure_plain(self, domain='*', passwords=None):
@@ -88,6 +93,7 @@ class Authenticator(object):
         """
         if passwords:
             self.passwords[domain] = passwords
+        self.log.debug("Configure plain: %s", domain)
 
     def configure_curve(self, domain='*', location=None):
         """Configure CURVE authentication for a given domain.
@@ -103,6 +109,7 @@ class Authenticator(object):
         """
         # If location is CURVE_ALLOW_ANY then allow all clients. Otherwise
         # treat location as a directory that holds the certificates.
+        self.log.debug("Configure curve: %s[%s]", domain, location)
         if location == CURVE_ALLOW_ANY:
             self.allow_any = True
         else:
@@ -111,6 +118,13 @@ class Authenticator(object):
                 self.certs[domain] = load_certificates(location)
             except Exception as e:
                 self.log.error("Failed to load CURVE certs from %s: %s", location, e)
+
+    def configure_gssapi(self, domain='*', location=None):
+        """Configure GSSAPI authentication
+        
+        Currently this is a no-op because there is nothing to configure with GSSAPI.
+        """
+        pass
 
     def handle_zap_message(self, msg):
         """Perform ZAP authentication"""
@@ -190,6 +204,14 @@ class Authenticator(object):
                 key = credentials[0]
                 allowed, reason = self._authenticate_curve(domain, key)
 
+            elif mechanism == b'GSSAPI':
+                if len(credentials) != 1:
+                    self.log.error("Invalid GSSAPI credentials: %r", credentials)
+                    self._send_zap_reply(request_id, b"400", b"Invalid credentials")
+                    return
+                principal = u(credentials[0], 'replace')
+                allowed, reason = self._authenticate_gssapi(domain, principal)
+
         if allowed:
             self._send_zap_reply(request_id, b"200", b"OK", username)
         else:
@@ -258,6 +280,11 @@ class Authenticator(object):
                 reason = b"Unknown domain"
 
         return allowed, reason
+
+    def _authenticate_gssapi(self, domain, principal):
+        """Nothing to do for GSSAPI, which has already been handled by an external service."""
+        self.log.debug("ALLOWED (GSSAPI) domain=%s principal=%s", domain, principal)
+        return True, b'OK'
 
     def _send_zap_reply(self, request_id, status_code, status_text, user_id='user'):
         """Send a ZAP reply to finish the authentication."""

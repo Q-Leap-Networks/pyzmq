@@ -29,7 +29,7 @@ class GarbageCollectorThread(Thread):
         self.ready = Event()
     
     def run(self):
-        # detect fork at begining of the thread
+        # detect fork at beginning of the thread
         if getpid is None or getpid() != self.pid:
             self.ready.set()
             return
@@ -89,7 +89,12 @@ class GarbageCollector(object):
     @property
     def context(self):
         if self._context is None:
-            self._context = zmq.Context()
+            if Thread.__module__.startswith('gevent'):
+                # gevent has monkey-patched Thread, use green Context
+                from zmq import green
+                self._context = green.Context()
+            else:
+                self._context = zmq.Context()
         return self._context
     
     @context.setter

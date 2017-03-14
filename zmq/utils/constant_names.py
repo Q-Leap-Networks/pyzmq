@@ -115,8 +115,46 @@ new_in = {
         
         # security
         'GSSAPI',
-        
     ],
+    (4,2,0) : [
+        # polling
+        'POLLPRI',
+    ]
+}
+
+draft_in = {
+    (4,2,0): [
+        # socket types
+        'SERVER',
+        'CLIENT',
+        'RADIO',
+        'DISH',
+        'GATHER',
+        'SCATTER',
+        'DGRAM',
+        
+        # ctx options
+        'BLOCKY',
+        
+        # socket options
+        'XPUB_MANUAL',
+        'XPUB_WELCOME_MSG',
+        'STREAM_NOTIFY',
+        'INVERT_MATCHING',
+        'HEARTBEAT_IVL',
+        'HEARTBEAT_TTL',
+        'HEARTBEAT_TIMEOUT',
+        'XPUB_VERBOSER',
+        'CONNECT_TIMEOUT',
+        'TCP_MAXRT',
+        'THREAD_SAFE',
+        'MULTICAST_MAXTPDU',
+        'VMCI_BUFFER_SIZE',
+        'VMCI_BUFFER_MIN_SIZE',
+        'VMCI_BUFFER_MAX_SIZE',
+        'VMCI_CONNECT_TIMEOUT',
+        'USE_FD',
+    ]
 }
 
 
@@ -148,6 +186,7 @@ base_names = [
     'POLLIN',
     'POLLOUT',
     'POLLERR',
+    'POLLPRI',
     
     'SNDMORE',
 
@@ -178,6 +217,13 @@ base_names = [
     'UPSTREAM',
     'DOWNSTREAM',
     'STREAM',
+    'SERVER',
+    'CLIENT',
+    'RADIO',
+    'DISH',
+    'GATHER',
+    'SCATTER',
+    'DGRAM',
 
     # events
     'EVENT_CONNECTED',
@@ -200,7 +246,7 @@ base_names = [
     'GSSAPI',
 
     ## ERRNO
-    # Often used (these are alse in errno.)
+    # Often used (these are else in errno.)
     'EAGAIN',
     'EINVAL',
     'EFAULT',
@@ -216,7 +262,7 @@ base_names = [
     'EHOSTUNREACH',
     'ENETRESET',
 
-    # For Windows compatability
+    # For Windows compatibility
     'HAUSNUMERO',
     'ENOTSUP',
     'EPROTONOSUPPORT',
@@ -244,6 +290,11 @@ int64_sockopt_names = [
     'SWAP',
     'MCAST_LOOP',
     'RECOVERY_IVL_MSEC',
+
+    # new in 4.2
+    'VMCI_BUFFER_SIZE',
+    'VMCI_BUFFER_MIN_SIZE',
+    'VMCI_BUFFER_MAX_SIZE',
 ]
 
 bytes_sockopt_names = [
@@ -264,6 +315,8 @@ bytes_sockopt_names = [
     'GSSAPI_PRINCIPAL',
     'GSSAPI_SERVICE_PRINCIPAL',
     'SOCKS_PROXY',
+    
+    'XPUB_WELCOME_MSG',
 ]
 
 fd_sockopt_names = [
@@ -320,6 +373,21 @@ int_sockopt_names = [
     'GSSAPI_PLAINTEXT',
     'HANDSHAKE_IVL',
     'XPUB_NODROP',
+    
+    # new in 4.2
+    'XPUB_MANUAL',
+    'STREAM_NOTIFY',
+    'INVERT_MATCHING',
+    'XPUB_VERBOSER',
+    'HEARTBEAT_IVL',
+    'HEARTBEAT_TTL',
+    'HEARTBEAT_TIMEOUT',
+    'CONNECT_TIMEOUT',
+    'TCP_MAXRT',
+    'THREAD_SAFE',
+    'MULTICAST_MAXTPDU',
+    'VMCI_CONNECT_TIMEOUT',
+    'USE_FD',
 ]
 
 switched_sockopt_names = [
@@ -336,6 +404,7 @@ ctx_opt_names = [
     'SOCKET_LIMIT',
     'THREAD_PRIORITY',
     'THREAD_SCHED_POLICY',
+    'BLOCKY',
 ]
 
 msg_opt_names = [

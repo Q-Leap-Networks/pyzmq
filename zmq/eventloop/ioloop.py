@@ -127,13 +127,19 @@ class ZMQPoller(object):
 
 
 class ZMQIOLoop(PollIOLoop):
-    """ZMQ subclass of tornado's IOLoop"""
+    """ZMQ subclass of tornado's IOLoop
+    
+    Minor modifications, so that .current/.instance return self
+    """
+    
+    _zmq_impl = ZMQPoller
+    
     def initialize(self, impl=None, **kwargs):
-        impl = ZMQPoller() if impl is None else impl
+        impl = self._zmq_impl() if impl is None else impl
         super(ZMQIOLoop, self).initialize(impl=impl, **kwargs)
     
-    @staticmethod
-    def instance():
+    @classmethod
+    def instance(cls, *args, **kwargs):
         """Returns a global `IOLoop` instance.
         
         Most applications have a single, global `IOLoop` running on the
@@ -143,8 +149,28 @@ class ZMQIOLoop(PollIOLoop):
         # install ZMQIOLoop as the active IOLoop implementation
         # when using tornado 3
         if tornado_version >= (3,):
-            PollIOLoop.configure(ZMQIOLoop)
-        return PollIOLoop.instance()
+            PollIOLoop.configure(cls)
+        loop = PollIOLoop.instance(*args, **kwargs)
+        if not isinstance(loop, cls):
+            warnings.warn("IOLoop.current expected instance of %r, got %r" % (cls, loop),
+                RuntimeWarning, stacklevel=2,
+            )
+        return loop
+    
+    @classmethod
+    def current(cls, *args, **kwargs):
+        """Returns the current thread’s IOLoop.
+        """
+        # install ZMQIOLoop as the active IOLoop implementation
+        # when using tornado 3
+        if tornado_version >= (3,):
+            PollIOLoop.configure(cls)
+        loop = PollIOLoop.current(*args, **kwargs)
+        if not isinstance(loop, cls):
+            warnings.warn("IOLoop.current expected instance of %r, got %r" % (cls, loop),
+                RuntimeWarning, stacklevel=2,
+            )
+        return loop
     
     def start(self):
         try:
@@ -154,10 +180,10 @@ class ZMQIOLoop(PollIOLoop):
                 # quietly return on ETERM
                 pass
             else:
-                raise e
+                raise
 
 
-if tornado_version >= (3,0) and tornado_version < (3,1):
+if (3, 0) <= tornado_version < (3, 1):
     def backport_close(self, all_fds=False):
         """backport IOLoop.close to 3.0 from 3.1 (supports fd.close() method)"""
         from zmq.eventloop.minitornado.ioloop import PollIOLoop as mini_loop

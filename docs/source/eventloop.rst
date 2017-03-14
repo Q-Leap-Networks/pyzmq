@@ -6,6 +6,26 @@
 Eventloops and PyZMQ
 ====================
 
+Integrating zmq with eventloops is *almost* really easy,
+since most eventloops happily support sockets.
+What gets messy is that zmq sockets aren't regular sockets,
+so they need special handling.
+libzmq provides a :func:`zmq_poll` function that is the same as regular polling,
+but **also** support zmq sockets. PyZMQ wrapps this in a :class:`~.Poller` class.
+Most of pyzmq's eventloop support involves setting up existing eventloops (tornado, asyncio)
+to use :func:`zmq_poll` as the inner poller, rather than the default select/poll/etc.
+Once that's done, zmq sockets can be happily treated like regular sockets,
+and regular sockets should continue to work as before.
+
+.. note::
+
+    It *is* possible to integrate zmq sockets into existing eventloops without modifying the poller
+    by using the ``socket.FD`` attribute.
+    The incredibly unfortunate aspect of this is that it was implemented as an edge-triggered fd,
+    which is highly error prone, and I wouldn't recommend using unless absolutely necessary.
+    This is used in :mod:`zmq.green`, and has been the source of many problems.
+
+
 Tornado IOLoop
 ==============
 
@@ -21,30 +41,32 @@ with :meth:`~.ZMQStream.on_send`.
 :func:`install()`
 -----------------
 
-With PyZMQ's ioloop, you can use zmq sockets in any tornado application.  You must first
-install PyZMQ's :class:`.IOLoop`, with the :func:`.ioloop.install` function:
+With PyZMQ's ioloop, you can use zmq sockets in any tornado application.  You can tell tornado to use zmq's poller by calling the :func:`.ioloop.install` function:
 
 .. sourcecode:: python
 
     from zmq.eventloop import ioloop
     ioloop.install()
 
-This sets the global instance of :class:`tornado.ioloop.IOLoop` with the global instance of
-our IOLoop class. The reason this must happen is that tornado objects avoid having to pass
-the active IOLoop instance around by having a staticmethod :meth:`.IOLoop.instance`, which
-always returns the active instance. If PyZMQ's IOLoop is installed after the first call to
-:meth:`.IOLoop.instance()` (called in almost every tornado object constructor), then it will
-raise an :exc:`AssertionError`, because the global IOLoop instance has already been
-created, and proceeding would result in not all objects being associated with the right
-IOLoop.
+You can also do the same thing by requesting the global instance from pyzmq:
 
-It is possible to use PyZMQ sockets with tornado *without* calling :func:`.ioloop.install`,
+.. sourcecode:: python
+
+    from zmq.eventloop.ioloop import IOLoop
+    loop = IOLoop.current()
+
+This configures tornado's :class:`tornado.ioloop.IOLoop` to use zmq's poller,
+and registers the current instance.
+
+Either ``install()`` or retrieving the zmq instance must be done before the global * instance is registered, else there will be a conflict.
+
+It is possible to use PyZMQ sockets with tornado *without* registering as the global instance,
 but it is less convenient. First, you must instruct the tornado IOLoop to use the zmq poller:
 
 .. sourcecode:: python
 
     from zmq.eventloop.ioloop import ZMQIOLoop
-    
+
     loop = ZMQIOLoop()
 
 Then, when you instantiate tornado and ZMQStream objects, you must pass the `io_loop`
@@ -72,12 +94,23 @@ You can also manually install this IOLoop as the global tornado instance, with:
     loop = ZMQIOLoop()
     loop.install()
 
-but it will **NOT** be the global *pyzmq* IOLoop instance, so it must still be
-passed to your ZMQStream constructors.
+.. _futures:
 
+Futures and coroutines
+----------------------
+
+PyZMQ 15 adds :mod:`zmq.eventloop.future`, containing a Socket subclass
+that returns :class:`~.tornado.concurrent.Future` objects for use in :mod:`tornado` coroutines.
+
+
+:class:`ZMQStream`
+------------------
+
+:class:`ZMQStream` objects let you register callbacks to handle messages as they arrive,
+for use with the tornado eventloop.
 
 :meth:`send`
-------------
+************
 
 ZMQStream objects do have :meth:`~.ZMQStream.send` and :meth:`~.ZMQStream.send_multipart`
 methods, which behaves the same way as :meth:`.Socket.send`, but instead of sending right
@@ -87,7 +120,7 @@ send will also be passed to the callback registered with :meth:`~.ZMQStream.on_s
 sending.
 
 :meth:`on_recv`
----------------
+***************
 
 :meth:`.ZMQStream.on_recv` is the primary method for using a ZMQStream. It registers a
 callback to fire with messages as they are received, which will *always* be multipart,
@@ -117,9 +150,9 @@ bytes.
 
 
 :meth:`on_recv_stream`
-----------------------
+**********************
 
-:meth:`.ZMQStream.on_recv_stream` is just like on_recv above, but the callback will be 
+:meth:`.ZMQStream.on_recv_stream` is just like on_recv above, but the callback will be
 passed both the message and the stream, rather than just the message.  This is meant to make
 it easier to use a single callback with multiple streams.
 
@@ -128,22 +161,22 @@ it easier to use a single callback with multiple streams.
     s1 = ctx.socket(zmq.REP)
     s1.bind('tcp://localhost:12345')
     stream1 = ZMQStream(s1)
-    
+
     s2 = ctx.socket(zmq.REP)
     s2.bind('tcp://localhost:54321')
     stream2 = ZMQStream(s2)
-    
+
     def echo(stream, msg):
         stream.send_multipart(msg)
-    
+
     stream1.on_recv_stream(echo)
     stream2.on_recv_stream(echo)
-    
+
     ioloop.IOLoop.instance().start()
 
 
 :meth:`flush`
--------------
+*************
 
 Sometimes with an eventloop, there can be multiple events ready on a single iteration of
 the loop. The :meth:`~.ZMQStream.flush` method allows developers to pull messages off of
@@ -153,6 +186,13 @@ any events, and you can specify a limit for how many events to flush in order to
 starvation.
 
 .. _Tornado: https://github.com/facebook/tornado
+
+.. _asyncio:
+
+AsyncIO
+=======
+
+PyZMQ 15 adds support for :mod:`asyncio` via :mod:`zmq.asyncio`.
 
 .. _zmq_green:
 
